@@ -1,0 +1,12 @@
+apiVersion: v2
+name: vllm
+description: vLLM inference server for local LLM deployment with MinIO storage
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - vllm
+  - llm
+  - inference
+  - ai
+home: https://github.com/vllm-project/vllm

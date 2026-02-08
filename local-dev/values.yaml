@@ -1,0 +1,32 @@
+# Local development values for vLLM
+# Uses MinIO for S3-compatible storage in Kind cluster
+# Note: vLLM requires CUDA GPU - this config is for testing the chart locally
+# For actual inference, deploy on a GPU cluster (e.g., Run:ai)
+
+image:
+  repository: vllm/vllm-openai
+  tag: "latest"
+
+model:
+  path: s3://models/TinyLlama-1.1B-Chat-v1.0
+
+s3:
+  endpoint: http://minio.default.svc.cluster.local:9000
+  credentialsSecret: minio-credentials
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: llm.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "2"
+  limits:
+    memory: "4Gi"
+    cpu: "4"

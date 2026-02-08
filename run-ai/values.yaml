@@ -1,0 +1,39 @@
+# Run:ai cluster values for vLLM
+# Requires GPU node with NVIDIA drivers
+
+model:
+  path: s3://models/TinyLlama-1.1B-Chat-v1.0
+
+vllm:
+  device: cuda
+  dtype: auto
+  maxModelLen: 2048
+
+s3:
+  endpoint: ""  # Set to your S3 endpoint (leave empty for AWS S3)
+  region: us-east-1
+  credentialsSecret: s3-credentials
+
+ingress:
+  enabled: true
+  className: ""  # Set to your cluster's ingress class
+  hosts:
+    - host: llm.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2"
+    nvidia.com/gpu: "1"
+  limits:
+    memory: "8Gi"
+    cpu: "4"
+    nvidia.com/gpu: "1"
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule

@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-loader
+  namespace: default
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: model-loader
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: model-loader
+          image: localhost:5001/model-loader:latest
+          command: ["python3", "-c"]
+          args:
+            - |
+              import subprocess, os, sys
+
+              MODEL_REPO = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+              MODEL_NAME = "TinyLlama-1.1B-Chat-v1.0"
+              BUCKET = "models"
+              MINIO_URL = "http://minio.default.svc.cluster.local:9000"
+              ACCESS_KEY = os.environ["MINIO_ACCESS_KEY"]
+              SECRET_KEY = os.environ["MINIO_SECRET_KEY"]
+
+              def run(cmd):
+                  print(f"+ {cmd}", flush=True)
+                  subprocess.run(cmd, shell=True, check=True)
+
+              # Configure MinIO
+              print("=== Configuring MinIO ===", flush=True)
+              run(f"mc alias set minio {MINIO_URL} {ACCESS_KEY} {SECRET_KEY}")
+              run(f"mc mb minio/{BUCKET} --ignore-existing")
+
+              # Check if model already uploaded
+              result = subprocess.run(f"mc ls minio/{BUCKET}/{MODEL_NAME}/", shell=True, capture_output=True, text=True)
+              file_count = len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
+              if file_count > 5:
+                  print(f"Model already exists in MinIO ({file_count} files). Done.", flush=True)
+                  sys.exit(0)
+
+              # Download model
+              print(f"=== Downloading {MODEL_REPO} from HuggingFace ===", flush=True)
+              from huggingface_hub import snapshot_download
+              snapshot_download(MODEL_REPO, local_dir="/tmp/model")
+
+              # Upload to MinIO
+              print("=== Uploading to MinIO ===", flush=True)
+              run(f"mc cp --recursive /tmp/model/ minio/{BUCKET}/{MODEL_NAME}/")
+
+              # Verify
+              print("=== Verifying ===", flush=True)
+              run(f"mc ls minio/{BUCKET}/{MODEL_NAME}/")
+              print(f"Done. Model available at s3://{BUCKET}/{MODEL_NAME}", flush=True)
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"

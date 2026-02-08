@@ -1,0 +1,82 @@
+# vLLM Helm Chart Values
+# Generic S3-compatible storage configuration
+
+image:
+  repository: vllm/vllm-openai
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Model configuration (required)
+model:
+  # S3 path to model (e.g., s3://bucket/model-name)
+  path: ""
+
+# vLLM server configuration
+vllm:
+  device: cuda
+  dtype: auto
+  maxModelLen: 2048
+  trustRemoteCode: true
+
+# S3 configuration - works with any S3-compatible storage
+s3:
+  # S3 endpoint URL (leave empty for AWS S3)
+  endpoint: ""
+  region: us-east-1
+  # Name of existing secret containing AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  credentialsSecret: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  #  - host: llm.local
+  #    paths:
+  #      - path: /
+  #        pathType: Prefix
+  tls: []
+
+resources: {}
+
+# Health probes with longer timeouts for model loading
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 120
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+volumes: []
+volumeMounts: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
