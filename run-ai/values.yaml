@@ -14,14 +14,24 @@ s3:
   region: us-east-1
   credentialsSecret: s3-credentials
 
+# Use ingress OR route, not both
 ingress:
-  enabled: true
+  enabled: false
   className: ""  # Set to your cluster's ingress class
   hosts:
     - host: llm.example.com
       paths:
         - path: /
           pathType: Prefix
+
+# OpenShift Route (use instead of ingress on OpenShift/Run:ai)
+route:
+  enabled: true
+  host: llm.example.com
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
 
 resources:
   requests:

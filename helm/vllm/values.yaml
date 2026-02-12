@@ -53,6 +53,22 @@ ingress:
   #        pathType: Prefix
   tls: []
 
+route:
+  enabled: false
+  annotations: {}
+  host: ""
+  path: ""
+  targetPort: http
+  wildcardPolicy: None
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    certificate: ""
+    key: ""
+    caCertificate: ""
+    destinationCACertificate: ""
+
 resources: {}
 
 # Health probes with longer timeouts for model loading
